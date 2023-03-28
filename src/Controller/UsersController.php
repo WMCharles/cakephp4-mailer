@@ -119,8 +119,8 @@ class UsersController extends AppController
                     $mail->SMTPDebug = SMTP::DEBUG_OFF;                   //Enable verbose debug output
                     $mail->Host       = 'smtp.gmail.com';                     //Set the SMTP server to send through
                     $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
-                    $mail->Username   = 'wafulacharles47@gmail.com';                     //SMTP username
-                    $mail->Password   = 'totnzlfqpbyehmyo';                               //SMTP password
+                    $mail->Username   = $_ENV['SMTP_USERNAME'];               //SMTP username
+                    $mail->Password   =  $_ENV['SMTP_PASS'];                   //SMTP password
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
                     $mail->Port       = 465;                                    //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
 

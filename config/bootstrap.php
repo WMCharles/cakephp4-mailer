@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+use Dotenv\Dotenv;
 
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
@@ -221,3 +222,5 @@ TypeFactory::map('time', StringType::class);
 //Inflector::rules('plural', ['/^(inflect)or$/i' => '\1ables']);
 //Inflector::rules('irregular', ['red' => 'redlings']);
 //Inflector::rules('uninflected', ['dontinflectme']);
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
