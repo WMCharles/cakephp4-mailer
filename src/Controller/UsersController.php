@@ -75,21 +75,22 @@ class UsersController extends AppController
     //                 //Recipients
     //                 $mail->setFrom('wafulacharles47@gmail.com', 'Masinde Charles');
     //                 $mail->addAddress($user->email, $user->name);     //Add a recipient
-    //                 // $mail->addAddress('ellen@example.com');               //Name is optional
-    //                 // $mail->addReplyTo('info@example.com', 'Information');
-    //                 // $mail->addCC('cc@example.com');
-    //                 // $mail->addBCC('bcc@example.com');
 
-    //                 //Attachments
-    //                 // $mail->addAttachment('/var/tmp/file.tar.gz');         //Add attachments
-    //                 // $mail->addAttachment('/tmp/image.jpg', 'new.jpg');    //Optional name
+    //                 // Set email body content from file template
+    //                 $templatePath = ROOT . DS . 'templates' . DS . 'email' . DS . 'html' . DS . 'account_creation.php';
 
-    //                 //Content
+    //                 $emailBodyContent = file_get_contents($templatePath);
+    //                 $emailBodyContent = str_replace('{$user_name}', $user->name, $emailBodyContent);
+    //                 $emailBodyContent = str_replace('{$user_email}', $user->email, $emailBodyContent);
+    //                 $emailBodyContent = str_replace('{$user_password}', $user->password, $emailBodyContent);
+
+    //                 // Set email properties
     //                 $mail->isHTML(true);                                  //Set email format to HTML
     //                 $mail->Subject = 'Account Creation';
-    //                 $mail->Body    = 'Your account has successfully been created. Your email is: ' . $user->email . 'and password is: ' . $users->password;
+    //                 $mail->Body    = $emailBodyContent;
     //                 $mail->AltBody = 'Success!';
 
+    //                 // Send email
     //                 $mail->send();
     //                 $this->Flash->success(__('The user has been saved.'));
     //                 return $this->redirect(['action' => 'index']);
@@ -115,7 +116,7 @@ class UsersController extends AppController
                 try {
                     //Server settings
                     $mail->isSMTP();                                            //Send using SMTP
-                    $mail->SMTPDebug = SMTP::DEBUG_SERVER;                      //Enable verbose debug output
+                    $mail->SMTPDebug = SMTP::DEBUG_OFF;                   //Enable verbose debug output
                     $mail->Host       = 'smtp.gmail.com';                     //Set the SMTP server to send through
                     $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
                     $mail->Username   = 'wafulacharles47@gmail.com';                     //SMTP username
@@ -123,26 +124,39 @@ class UsersController extends AppController
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
                     $mail->Port       = 465;                                    //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
 
-                    //Recipients
-                    $mail->setFrom('wafulacharles47@gmail.com', 'Masinde Charles');
-                    $mail->addAddress($user->email, $user->name);     //Add a recipient
-
                     // Set email body content from file template
                     $templatePath = ROOT . DS . 'templates' . DS . 'email' . DS . 'html' . DS . 'account_creation.php';
+                    $admin = ROOT . DS . 'templates' . DS . 'email' . DS . 'html' . DS . 'admin_notification.php';
 
-                    $emailBodyContent = file_get_contents($templatePath);
-                    $emailBodyContent = str_replace('{$user_name}', $user->name, $emailBodyContent);
-                    $emailBodyContent = str_replace('{$user_email}', $user->email, $emailBodyContent);
-                    $emailBodyContent = str_replace('{$user_password}', $user->password, $emailBodyContent);
+                    // Set user email content
+                    $userEmailBodyContent = file_get_contents($templatePath);
+                    $userEmailBodyContent = str_replace('{$user_name}', $user->name, $userEmailBodyContent);
+                    $userEmailBodyContent = str_replace('{$user_email}', $user->email, $userEmailBodyContent);
+                    $userEmailBodyContent = str_replace('{$user_password}', $user->password, $userEmailBodyContent);
 
-                    // Set email properties
+                    // Set admin email content
+                    $adminEmailBodyContent = file_get_contents($admin);
+                    $adminEmailBodyContent = str_replace('{$user_name}', $user->name, $adminEmailBodyContent);
+                    $adminEmailBodyContent = str_replace('{$user_email}', $user->email, $adminEmailBodyContent);
+
+                    // Send user email
+                    $mail->setFrom('wafulacharles47@gmail.com', 'Masinde Charles');
+                    $mail->addAddress($user->email, $user->name);     //Add a recipient
                     $mail->isHTML(true);                                  //Set email format to HTML
                     $mail->Subject = 'Account Creation';
-                    $mail->Body    = $emailBodyContent;
+                    $mail->Body    = $userEmailBodyContent;
                     $mail->AltBody = 'Success!';
-
-                    // Send email
                     $mail->send();
+
+                    // Send admin email
+                    $mail->clearAddresses();
+                    $mail->addAddress('luhyabandit@gmail.com', 'Wafs');
+                    $mail->isHTML(false);                                  //Set email format to plain text
+                    $mail->Subject = 'New User Created';
+                    $mail->Body    = $adminEmailBodyContent;
+                    $mail->AltBody = 'A new user has been created.';
+                    $mail->send();
+
                     $this->Flash->success(__('The user has been saved.'));
                     return $this->redirect(['action' => 'index']);
                 } catch (Exception $e) {
@@ -155,6 +169,7 @@ class UsersController extends AppController
         }
         $this->set(compact('user'));
     }
+
 
 
 
