@@ -77,7 +77,7 @@ class UserPayrollDetailsController extends AppController
         $this->set(compact('userPayrollDetail', 'users', 'payrollCodes'));
     }
 
-    public function upload()
+    public function upload2()
     {
         if ($this->request->is('post')) {
             $file = $this->request->getData('file');
@@ -147,6 +147,87 @@ class UserPayrollDetailsController extends AppController
             }
         }
     }
+
+    public function upload()
+    {
+        if ($this->request->is('post')) {
+            $file = $this->request->getData('file');
+            $filename = $file->getClientFilename();
+            $targetPath = WWW_ROOT . 'uploads' . DS . $filename;
+            if (move_uploaded_file($file->getStream()->getMetadata('uri'), $targetPath)) {
+                $spreadsheet = IOFactory::load($targetPath);
+                $worksheet = $spreadsheet->getActiveSheet();
+                $rows = $worksheet->toArray();
+
+                // Extract payroll code names from first row
+                $payrollCodeNames = array_slice($rows[0], 1);
+
+                // Find payroll code IDs
+                $payrollCodeIds = [];
+                foreach ($payrollCodeNames as $payrollCodeName) {
+                    $payrollCode = $this->UserPayrollDetails->PayrollCodes->find()
+                        ->where(['name' => $payrollCodeName])
+                        ->first();
+                    if ($payrollCode) {
+                        $payrollCodeIds[] = $payrollCode->id;
+                    }
+                }
+
+                $userPayrollDetails = [];
+                for ($i = 1; $i < count($rows); $i++) {
+                    $userId = (int) $rows[$i][0];
+                    if (!$userId) {
+                        // skip rows with invalid user IDs
+                        continue;
+                    }
+
+                    // Loop through payroll codes and create user payroll details
+                    for ($j = 0; $j < count($payrollCodeIds); $j++) {
+                        $payrollCodeId = $payrollCodeIds[$j];
+                        $amount = (int) $rows[$i][$j + 1];
+
+                        $existingUserPayrollDetail = $this->UserPayrollDetails->find()
+                            ->where(['user_id' => $userId, 'payroll_code_id' => $payrollCodeId])
+                            ->first();
+
+                        if ($existingUserPayrollDetail) {
+                            $existingUserPayrollDetail->amount = $amount;
+                            $userPayrollDetails[] = $existingUserPayrollDetail;
+                        } else {
+                            $userPayrollDetail = $this->UserPayrollDetails->newEmptyEntity();
+                            $userPayrollDetail->user_id = $userId;
+                            $userPayrollDetail->payroll_code_id = $payrollCodeId;
+                            $userPayrollDetail->amount = $amount;
+                            $userPayrollDetails[] = $userPayrollDetail;
+                        }
+                    }
+                }
+
+                $saved = $this->UserPayrollDetails->saveMany($userPayrollDetails);
+                if ($saved) {
+                    $created = 0;
+                    $updated = 0;
+                    foreach ($saved as $entity) {
+                        if ($entity->isNew()) {
+                            $created++;
+                        } else {
+                            $updated++;
+                        }
+                    }
+                    $this->Flash->success(__('All user payroll details have been uploaded. Created: {0}. Updated: {1}.', $created, $updated));
+                } else {
+                    $this->Flash->error(__('The user payroll details could not be saved. Please, try again.'));
+                }
+            } else {
+                $this->Flash->error(__('The file could not be uploaded. Please, try again.'));
+            }
+        }
+    }
+
+
+
+
+
 
 
 
