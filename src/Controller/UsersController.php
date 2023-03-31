@@ -8,6 +8,11 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
+// Import the necessary classes from PhpSpreadsheet
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+
 //Load Composer's autoloader
 require 'vendor/autoload.php';
 
@@ -63,14 +68,14 @@ class UsersController extends AppController
 
                 try {
                     //Server settings
-                    $mail->isSMTP();                                            
-                    $mail->SMTPDebug = SMTP::DEBUG_OFF;                   
-                    $mail->Host       = 'smtp.ionos.com';                     
-                    $mail->SMTPAuth   = true;                                   
-                    $mail->Username   = $_ENV['SMTP_USERNAME'];              
-                    $mail->Password   =  $_ENV['SMTP_PASS'];                   
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            
-                    $mail->Port       = 465;                                    
+                    $mail->isSMTP();
+                    $mail->SMTPDebug = SMTP::DEBUG_OFF;
+                    $mail->Host       = 'smtp.ionos.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = $_ENV['SMTP_USERNAME'];
+                    $mail->Password   =  $_ENV['SMTP_PASS'];
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                    $mail->Port       = 465;
 
                     // Set email body content from file template
                     $templatePath = ROOT . DS . 'templates' . DS . 'email' . DS . 'html' . DS . 'account_creation.php';
@@ -89,8 +94,8 @@ class UsersController extends AppController
 
                     // Send user email
                     $mail->setFrom('wafulacharles47@gmail.com', 'Masinde Charles');
-                    $mail->addAddress($user->email, $user->name);     
-                    $mail->isHTML(true);                                  
+                    $mail->addAddress($user->email, $user->name);
+                    $mail->isHTML(true);
                     $mail->Subject = 'Account Creation';
                     $mail->Body    = $userEmailBodyContent;
                     $mail->AltBody = 'Success!';
@@ -99,7 +104,7 @@ class UsersController extends AppController
                     // Send admin email
                     $mail->clearAddresses();
                     $mail->addAddress('luhyabandit@gmail.com', 'Wafs');
-                    $mail->isHTML(false);                                  
+                    $mail->isHTML(false);
                     $mail->Subject = 'New User Created';
                     $mail->Body    = $adminEmailBodyContent;
                     $mail->AltBody = 'A new user has been created.';
@@ -112,14 +117,43 @@ class UsersController extends AppController
                     return $this->redirect(['action' => 'index']);
                 }
                 $this->Flash->success(__('The user has been saved.'));
-
             }
             $this->Flash->error(__('The user could not be saved. Please, try again.'));
         }
         $this->set(compact('user'));
     }
 
-
+    // upload users
+    public function upload()
+    {
+        if ($this->request->is('post')) {
+            $file = $this->request->getData('file');
+            $filename = $file->getClientFilename();
+            $targetPath = WWW_ROOT . 'uploads' . DS . $filename;
+            if (move_uploaded_file($file->getStream()->getMetadata('uri'), $targetPath)) {
+                $this->Flash->success(__('The file has been uploaded.'));
+                $spreadsheet = IOFactory::load($targetPath);
+                $worksheet = $spreadsheet->getActiveSheet();
+                $rows = $worksheet->toArray();
+                $users = [];
+                for ($i = 1; $i < count($rows); $i++) {
+                    $user = $this->Users->newEmptyEntity();
+                    $user->name = $rows[$i][0];
+                    $user->email = $rows[$i][1];
+                    $user->password = $rows[$i][2];
+                    $users[] = $user;
+                }
+                if ($this->Users->saveMany($users)) {
+                    $this->Flash->success(__('All users have been uploaded.'));
+                    return $this->redirect(['action' => 'index']);
+                } else {
+                    $this->Flash->error(__('The users could not be saved. Please, try again.'));
+                }
+            } else {
+                $this->Flash->error(__('The file could not be uploaded. Please, try again.'));
+            }
+        }
+    }
 
 
     /**
