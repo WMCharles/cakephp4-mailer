@@ -172,20 +172,26 @@ class UserPayrollDetailsController extends AppController
                         $payrollCodeIds[] = $payrollCode->id;
                     }
                 }
-
                 $userPayrollDetails = [];
                 for ($i = 1; $i < count($rows); $i++) {
-                    $userId = (int) $rows[$i][0];
-                    if (!$userId) {
-                        // skip rows with invalid user IDs
+                    $userName = $rows[$i][0];
+                    if (!$userName) {
+                        // skip rows with invalid user names
                         continue;
                     }
-
+                    // Get user ID
+                    $user = $this->UserPayrollDetails->Users->find()
+                        ->where(['name' => $userName])
+                        ->first();
+                    if (!$user) {
+                        // skip rows with unknown user names
+                        continue;
+                    }
+                    $userId = $user->id;
                     // Loop through payroll codes and create user payroll details
                     for ($j = 0; $j < count($payrollCodeIds); $j++) {
                         $payrollCodeId = $payrollCodeIds[$j];
                         $amount = (int) $rows[$i][$j + 1];
-
                         $existingUserPayrollDetail = $this->UserPayrollDetails->find()
                             ->where(['user_id' => $userId, 'payroll_code_id' => $payrollCodeId])
                             ->first();
@@ -223,7 +229,6 @@ class UserPayrollDetailsController extends AppController
             }
         }
     }
-
 
 
 
