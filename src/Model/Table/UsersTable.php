@@ -58,6 +58,9 @@ class UsersTable extends Table
         $this->hasMany('Subscribers', [
             'foreignKey' => 'user_id',
         ]);
+        $this->hasMany('UserPayrollDetails', [
+            'foreignKey' => 'user_id',
+        ]);
     }
 
     /**
