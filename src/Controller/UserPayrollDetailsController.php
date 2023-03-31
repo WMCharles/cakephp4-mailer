@@ -77,77 +77,6 @@ class UserPayrollDetailsController extends AppController
         $this->set(compact('userPayrollDetail', 'users', 'payrollCodes'));
     }
 
-    public function upload2()
-    {
-        if ($this->request->is('post')) {
-            $file = $this->request->getData('file');
-            $filename = $file->getClientFilename();
-            $targetPath = WWW_ROOT . 'uploads' . DS . $filename;
-            if (move_uploaded_file($file->getStream()->getMetadata('uri'), $targetPath)) {
-                $spreadsheet = IOFactory::load($targetPath);
-                $worksheet = $spreadsheet->getActiveSheet();
-                $rows = $worksheet->toArray();
-
-                $userPayrollDetails = [];
-                for ($i = 1; $i < count($rows); $i++) {
-                    $userId = (int) $rows[$i][0];
-                    if (!$userId) {
-                        // skip rows with invalid user IDs
-                        continue;
-                    }
-                    $basicSalary = (int) $rows[$i][1];
-                    $houseAllowance = (int) $rows[$i][2];
-
-                    $existingBasicSalary = $this->UserPayrollDetails->find()
-                        ->where(['user_id' => $userId, 'payroll_code_id' => 1])
-                        ->first();
-                    if ($existingBasicSalary) {
-                        $existingBasicSalary->amount = $basicSalary;
-                        $userPayrollDetails[] = $existingBasicSalary;
-                    } else {
-                        $userPayrollDetail = $this->UserPayrollDetails->newEmptyEntity();
-                        $userPayrollDetail->user_id = $userId;
-                        $userPayrollDetail->payroll_code_id = 1; // ID of the basic salary code
-                        $userPayrollDetail->amount = $basicSalary;
-                        $userPayrollDetails[] = $userPayrollDetail;
-                    }
-
-                    $existingHouseAllowance = $this->UserPayrollDetails->find()
-                        ->where(['user_id' => $userId, 'payroll_code_id' => 2])
-                        ->first();
-                    if ($existingHouseAllowance) {
-                        $existingHouseAllowance->amount = $houseAllowance;
-                        $userPayrollDetails[] = $existingHouseAllowance;
-                    } else {
-                        $userPayrollDetail = $this->UserPayrollDetails->newEmptyEntity();
-                        $userPayrollDetail->user_id = $userId;
-                        $userPayrollDetail->payroll_code_id = 2; // ID of the house allowance code
-                        $userPayrollDetail->amount = $houseAllowance;
-                        $userPayrollDetails[] = $userPayrollDetail;
-                    }
-                }
-
-                $saved = $this->UserPayrollDetails->saveMany($userPayrollDetails);
-                if ($saved) {
-                    $created = 0;
-                    $updated = 0;
-                    foreach ($saved as $entity) {
-                        if ($entity->isNew()) {
-                            $created++;
-                        } else {
-                            $updated++;
-                        }
-                    }
-                    $this->Flash->success(__('All user payroll details have been uploaded. Created: {0}. Updated: {1}.', $created, $updated));
-                } else {
-                    $this->Flash->error(__('The user payroll details could not be saved. Please, try again.'));
-                }
-            } else {
-                $this->Flash->error(__('The file could not be uploaded. Please, try again.'));
-            }
-        }
-    }
-
     public function upload()
     {
         if ($this->request->is('post')) {
@@ -229,16 +158,6 @@ class UserPayrollDetailsController extends AppController
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Edit method
