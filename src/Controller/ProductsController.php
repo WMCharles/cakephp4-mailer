@@ -1,7 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controller;
+
+use Cake\Mailer\Mailer;
 
 /**
  * Products Controller
@@ -54,6 +57,8 @@ class ProductsController extends AppController
             $product = $this->Products->patchEntity($product, $this->request->getData());
             if ($this->Products->save($product)) {
                 $this->Flash->success(__('The product has been saved.'));
+                // send email to all users
+                $this->sendProductAddedEmail($product);
 
                 return $this->redirect(['action' => 'index']);
             }
@@ -62,6 +67,29 @@ class ProductsController extends AppController
         $users = $this->Products->Users->find('list', ['limit' => 200])->all();
         $categories = $this->Products->Categories->find('list', ['limit' => 200])->all();
         $this->set(compact('product', 'users', 'categories'));
+    }
+
+    public function sendProductAddedEmail($product)
+    {
+        $users = $this->Products->Users->find('all');
+        $mailer = new Mailer('default');
+
+        foreach ($users as $user) {
+            $mailer
+                ->setEmailFormat('html')
+                ->setTo($user->email)
+                ->setFrom(['noreply@firstadvantageconsulting.com' => 'First Advantage Consulting'])
+                ->setSubject($product->name . ' has been added')
+                ->viewBuilder()
+                ->setTemplate('product_added')
+                ->setVar('productName', $product->name)
+                ->setVar('userName', $user->name);
+            try {
+                $mailer->deliver();
+            } catch (Exception $e) {
+                throw new Exception("Exception caught with message: " . $e->getMessage() . '\n' . $mailer->smtpError);
+            }
+        }
     }
 
     /**
