@@ -12,7 +12,7 @@
         "mobiledetect/mobiledetectlib": "^2.8",
         "phpmailer/phpmailer": "^6.8",
         "phpoffice/phpexcel": "^1.8",
-        "phpoffice/phpspreadsheet": "^1.28",
+        "phpoffice/phpspreadsheet": "^2.0",
         "vlucas/phpdotenv": "^5.5"
     },
     "require-dev": {
